@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYPER WEB OS v2.2 — PREDATOR COBRA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg: #000000;              /* Pure Black */
+    --bg2: #050000;
+    --surface: #0d0000;
+    --surface2: #120000;
+    --border: #2a0a0a;
+    --accent: #00ff41;          /* Cobra Green */
+    --accent2: #cc0000;         /* Deep Red - Predator */
+    --accent3: #ff2200;         /* Bright Red glow */
+    --text: #d4c8c8;
+    --text-dim: #5a3030;
+    --text-bright: #ffffff;
+    --danger: #ff0000;
+    --warn: #ff4400;
+    --taskbar-h: 44px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* === BOOT SCREEN === */
+  #bootScreen {
+    position: fixed; inset: 0;
+    background: #000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.8s ease;
+  }
+  #bootScreen.fade-out { opacity: 0; pointer-events: none; }
+
+  #bootAscii {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(6px, 1.1vw, 13px);
+    line-height: 1.15;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent);
+    white-space: pre;
+    animation: bootGlow 1s ease infinite alternate;
+  }
+  @keyframes bootGlow {
+    from { text-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent); }
+    to   { text-shadow: 0 0 20px var(--accent), 0 0 60px var(--accent), 0 0 100px #00ff4140; }
+  }
+
+  #bootCobra {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(10px, 1.5vw, 16px);
+    line-height: 1.3;
+    color: var(--accent2);
+    text-shadow: 0 0 14px var(--accent2);
+    white-space: pre;
+    margin-top: 10px;
+    animation: cobraGlow 1.5s ease infinite alternate;
+  }
+  @keyframes cobraGlow {
+    from { text-shadow: 0 0 8px var(--accent2); opacity: 0.7; }
+    to   { text-shadow: 0 0 24px var(--accent2), 0 0 50px #ff3c0060; opacity: 1; }
+  }
+
+  #bootLog {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--text-dim);
+    width: 420px;
+    max-width: 90vw;
+  }
+  .boot-line {
+    display: flex; gap: 8px; margin-bottom: 3px;
+    opacity: 0; animation: fadeIn 0.2s ease forwards;
+  }
+  .boot-ok   { color: var(--accent); }
+  .boot-info { color: var(--accent2); }
+  .boot-warn { color: var(--warn); }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  #bootProgress {
+    margin-top: 20px; width: 420px; max-width: 90vw;
+    height: 3px; background: #1a1a1a; border-radius: 2px; overflow: hidden;
+  }
+  #bootProgressBar {
+    height: 100%; background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+    width: 0; transition: width 0.3s ease;
+  }
+
+  /* === DESKTOP === */
+  #desktop {
+    width: 100%; height: calc(100vh - var(--taskbar-h));
+    position: relative;
+    background: #020305;
+  }
+
+  /* Predator Cobra Wallpaper canvas */
+  #desktopWallpaper {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Grid lines on top */
+  #desktop::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,65,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,65,0.018) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none; z-index: 1;
+  }
+
+  /* Make icons above wallpaper */
+  .desktop-icon { z-index: 2; }
+
+  /* === DESKTOP ICONS === */
+  .desktop-icon {
+    position: absolute;
+    width: 76px; text-align: center;
+    padding: 8px 4px; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .desktop-icon:hover { background: rgba(0,255,136,0.08); }
+  .desktop-icon:active { background: rgba(0,255,136,0.15); }
+  .desktop-icon .icon-img {
+    font-size: 32px; display: block; margin-bottom: 4px;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  .desktop-icon span {
+    font-size: 10px; color: var(--text);
+    text-shadow: 0 1px 4px #000;
+    word-break: break-word; line-height: 1.3;
+  }
+
+  /* === TASKBAR === */
+  #taskbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--taskbar-h);
+    background: rgba(0,0,0,0.96);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(180,0,0,0.4);
+    display: flex; align-items: center; padding: 0 12px;
+    gap: 6px; z-index: 1000;
+    box-shadow: 0 -2px 20px rgba(180,0,0,0.15);
+  }
+
+  #startBtn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 4px;
+    background: rgba(150,0,0,0.2);
+    border: 1px solid rgba(200,0,0,0.5);
+    color: #cc0000; font-family: inherit;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(200,0,0,0.6);
+  }
+  #startBtn:hover { background: rgba(180,0,0,0.35); box-shadow: 0 0 16px rgba(180,0,0,0.4); border-color: #cc0000; }
+
+  .taskbar-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+  .tb-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 5px;
+    border: none; background: transparent;
+    color: var(--text-dim); font-family: inherit; font-size: 11px;
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tb-btn:hover { background: var(--surface); color: var(--text); }
+  .tb-btn.active { background: var(--surface2); color: var(--accent); border-bottom: 2px solid var(--accent); }
+
+  #taskbarClock {
+    margin-left: auto;
+    font-size: 12px; color: var(--text-dim);
+    min-width: 100px; text-align: right;
+  }
+
+  /* === WINDOWS === */
+  .window {
+    position: absolute;
+    background: #050000;
+    border: 1px solid rgba(120,0,0,0.5);
+    border-radius: 6px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 320px; min-height: 200px;
+    transition: box-shadow 0.15s;
+  }
+  .window:focus-within, .window.focused {
+    box-shadow: 0 24px 80px rgba(0,0,0,0.95), 0 0 20px rgba(180,0,0,0.15), 0 0 0 1px rgba(180,0,0,0.3);
+    border-color: rgba(180,0,0,0.5);
+  }
+
+  .window-titlebar {
+    display: flex; align-items: center;
+    padding: 0 0 0 12px; height: 36px;
+    background: #0d0000;
+    border-bottom: 1px solid rgba(150,0,0,0.4);
+    cursor: move; flex-shrink: 0;
+  }
+  .win-controls { display: flex; gap: 0; margin-left: auto; }
+  .wc {
+    width: 42px; height: 36px; border-radius: 0;
+    cursor: pointer; border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 13px; font-weight: 400;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s, color 0.12s;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  .wc:hover { background: rgba(255,255,255,0.1); color: var(--text-bright); }
+  .wc-close:hover { background: #e81123 !important; color: #fff !important; }
+  .wc-close { border-radius: 0 8px 0 0; }
+  .wc-min::before  { content: '−'; font-size: 16px; line-height: 1; }
+  .wc-max::before  { content: '□'; font-size: 12px; line-height: 1; }
+  .wc-close::before { content: '✕'; font-size: 12px; line-height: 1; }
+  .win-title  { font-size: 12px; color: var(--text-dim); flex: 1; text-align: left; letter-spacing: 0.5px; }
+  .win-icon   { font-size: 14px; }
+
+  .window-body { flex: 1; overflow: hidden; position: relative; }
+
+  /* === TERMINAL === */
+  #terminalWindow {
+    width: 700px; height: 460px; top: 20px; left: 30px; z-index: 10;
+  }
+  #termBody {
+    height: 100%;
+    background: #000000;
+    padding: 12px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    position: relative;
+  }
+  /* Cobra watermark inside terminal */
+  #termBody::before {
+    content: "   _ _\A ( \\/ )\A  \\ /\A  / \\\A (_/ \\_)";
+    white-space: pre;
+    position: absolute;
+    bottom: 60px; right: 20px;
+    font-family: monospace; font-size: 15px;
+    color: rgba(0,255,65,0.05);
+    pointer-events: none;
+    line-height: 1.5;
+    z-index: 0;
+  }
+  .term-output { white-space: pre-wrap; word-break: break-all; }
+  .term-line-user { color: var(--accent2); }
+  .term-line-output { color: var(--text); }
+  .term-line-error { color: var(--danger); }
+  .term-line-success { color: var(--accent); }
+  .term-prompt { display: flex; align-items: center; gap: 0; margin-top: 4px; }
+  .term-ps1 { color: var(--accent); white-space: pre; }
+  .term-ps1-path { color: var(--accent2); }
+  #termInput {
+    flex: 1; background: transparent; border: none;
+    outline: none; color: var(--text-bright);
+    font-family: inherit; font-size: 13px;
+    caret-color: var(--accent);
+  }
+
+  /* === FILE MANAGER === */
+  #fileWindow { width: 580px; height: 420px; top: 30px; left: 420px; z-index: 9; }
+  #fileBody { height: 100%; display: flex; flex-direction: column; background: var(--bg2); }
+  #fileToolbar {
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .file-tb-btn {
+    padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-family: inherit;
+    font-size: 11px; cursor: pointer; transition: all 0.15s;
+  }
+  .file-tb-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  #filePath {
+    flex: 1; padding: 3px 8px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--text); font-family: inherit; font-size: 11px;
+  }
+  #fileGrid {
+    flex: 1; padding: 12px; overflow-y: auto;
+    display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start;
+  }
+  .file-item {
+    display: flex; flex-direction: column; align-items: center;
+    width: 80px; padding: 8px 4px; border-radius: 6px;
+    cursor: pointer; transition: background 0.15s; gap: 4px;
+  }
+  .file-item:hover { background: rgba(0,212,255,0.08); }
+  .file-item .fi-icon { font-size: 28px; }
+  .file-item .fi-name { font-size: 10px; text-align: center; word-break: break-word; line-height: 1.3; color: var(--text); }
+  .file-item.selected { background: rgba(0,212,255,0.15); outline: 1px solid var(--accent2); }
+
+  /* === SYSTEM MONITOR === */
+  #sysmonWindow { width: 500px; height: 380px; top: 260px; left: 430px; z-index: 8; }
+  #sysmonBody { height: 100%; overflow-y: auto; padding: 14px; background: var(--bg2); font-size: 12px; }
+  .sm-section { margin-bottom: 16px; }
+  .sm-title { color: var(--accent); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .sm-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .sm-label { color: var(--text-dim); }
+  .sm-val { color: var(--text-bright); font-weight: 600; }
+  .sm-bar { height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; margin-top: 2px; margin-bottom: 8px; }
+  .sm-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .sm-bar-cpu { background: linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow: 0 0 8px var(--accent); }
+  .sm-bar-mem { background: linear-gradient(90deg, var(--accent3), var(--warn)); box-shadow: 0 0 8px var(--accent3); }
+  .sm-bar-disk { background: linear-gradient(90deg, var(--accent2), #7c3aed); }
+  .process-row {
+    display: flex; gap: 8px; padding: 4px 6px; border-radius: 4px;
+    font-size: 11px; transition: background 0.1s;
+  }
+  .process-row:hover { background: var(--surface); }
+  .pr-pid { color: var(--text-dim); width: 36px; flex-shrink: 0; }
+  .pr-name { color: var(--text); flex: 1; }
+  .pr-cpu { color: var(--accent); width: 44px; text-align: right; }
+  .pr-mem { color: var(--warn); width: 52px; text-align: right; }
+
+  /* === TEXT EDITOR === */
+  #editorWindow { width: 520px; height: 380px; top: 260px; left: 30px; z-index: 7; }
+  #editorBody { height: 100%; display: flex; flex-direction: column; }
+  #editorToolbar {
+    display: flex; gap: 6px; padding: 6px 10px;
+    border-bottom: 1px solid var(--border); background: var(--surface2); flex-shrink: 0;
+  }
+  #editorFilename {
+    flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-family: inherit; font-size: 11px; padding: 3px 8px;
+  }
+  #editorArea {
+    flex: 1; background: var(--bg); border: none; outline: none;
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    padding: 12px; resize: none; line-height: 1.7;
+  }
+  #editorStatus { padding: 4px 10px; font-size: 10px; color: var(--text-dim); background: var(--surface2); border-top: 1px solid var(--border); flex-shrink: 0; }
+
+  /* === SCROLLBAR === */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  /* === CONTEXT MENU === */
+  #contextMenu {
+    position: fixed; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px; min-width: 160px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 9000;
+    display: none; font-size: 12px;
+  }
+  .ctx-item {
+    padding: 6px 12px; border-radius: 5px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; color: var(--text);
+    transition: background 0.1s;
+  }
+  .ctx-item:hover { background: rgba(0,255,136,0.1); color: var(--accent); }
+  .ctx-sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+  /* === NOTIFICATION === */
+  #notifArea { position: fixed; top: 12px; right: 12px; z-index: 8000; display: flex; flex-direction: column; gap: 6px; }
+  .notif {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; min-width: 240px; max-width: 300px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4); font-size: 12px;
+    animation: slideIn 0.3s ease; border-left: 3px solid var(--accent);
+  }
+  .notif.warn { border-left-color: var(--warn); }
+  .notif-title { color: var(--text-bright); font-weight: 600; margin-bottom: 2px; }
+  .notif-body { color: var(--text-dim); }
+  @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Hidden by default */
+  .window { display: none; }
+  .window.open { display: flex; }
+
+  /* Resize handle */
+  .resize-handle {
+    position: absolute; bottom: 0; right: 0;
+    width: 14px; height: 14px; cursor: se-resize;
+    background: linear-gradient(135deg, transparent 50%, var(--border) 50%);
+    border-radius: 0 0 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="bootScreen">
+  <pre id="bootAscii">
+   ██████╗██╗   ██╗██████╗ ███████╗██████╗ ██╗    ██╗███████╗██████╗ 
+  ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██║    ██║██╔════╝██╔══██╗
+  ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝██║ █╗ ██║█████╗  ██████╔╝
+  ██║       ╚██╔╝  ██╔═══╝ ██╔══╝  ██╔══██╗██║███╗██║██╔══╝  ██╔══██╗
+  ╚██████╗   ██║   ██║     ███████╗██║  ██║╚███╔███╔╝███████╗██████╔╝
+   ╚═════╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚══════╝╚═════╝ 
+  </pre>
+  <pre id="bootCobra">
+          /\ /\
+         /  V  \
+        /  | |  \
+       |   | |   |
+       |   | |   |
+        \  | |  /
+         \ | | /
+          \|||/
+           VV
+
+  ══════════════════════════════════════════
+      PREDATOR COBRA EDITION  🐍  v2.2
+   DESIGNED FOR: ENG KARIM & ENG MOHAMED
+          DESIGNED BY: CYPER WEB
+  ══════════════════════════════════════════
+  </pre>
+  <div id="bootLog"></div>
+  <div id="bootProgress"><div id="bootProgressBar"></div></div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div id="notifArea"></div>
+
+<!-- DESKTOP -->
+<div id="desktop">
+  <canvas id="desktopWallpaper"></canvas>
+  <!-- Icons -->
+  <div class="desktop-icon" style="top:30px;left:20px" ondblclick="openWindow('terminalWindow')">
+    <span class="icon-img" style="color:#00ff88">⬛</span>
+    <span>Terminal</span>
+  </div>
+  <div class="desktop-icon" style="top:120px;left:20px" ondblclick="openWindow('fileWindow')">
+    <span class="icon-img" style="color:#00d4ff">📁</span>
+    <span>Files</span>
+  </div>
+  <div class="desktop-icon" style="top:210px;left:20px" ondblclick="openWindow('sysmonWindow')">
+    <span class="icon-img" style="color:#ff6b35">📊</span>
+    <span>System Monitor</span>
+  </div>
+  <div class="desktop-icon" style="top:300px;left:20px" ondblclick="openWindow('editorWindow')">
+    <span class="icon-img" style="color:#ffa502">📝</span>
+    <span>Text Editor</span>
+  </div>
+</div>
+
+<!-- TASKBAR -->
+<div id="taskbar">
+  <button id="startBtn" onclick="toggleStart()">🐍 COBRA</button>
+  <div class="taskbar-sep"></div>
+  <button class="tb-btn" id="tb-terminal" onclick="openWindow('terminalWindow')">⬛ Terminal</button>
+  <button class="tb-btn" id="tb-files" onclick="openWindow('fileWindow')">📁 Files</button>
+  <button class="tb-btn" id="tb-sysmon" onclick="openWindow('sysmonWindow')">📊 Monitor</button>
+  <button class="tb-btn" id="tb-editor" onclick="openWindow('editorWindow')">📝 Editor</button>
+  <div id="taskbarClock">00:00:00</div>
+</div>
+
+<!-- TERMINAL WINDOW -->
+<div class="window" id="terminalWindow">
+  <div class="window-titlebar" id="terminalWindow-tb">
+    <div class="win-controls">
+      <button class="wc wc-close" onclick="closeWindow('terminalWindow')"></button>
+      <button class="wc wc-min" onclick="minimizeWindow('terminalWindow')"></button>
+      <button class="wc wc-max" onclick="maximizeWindow('terminalWindow')"></button>
+    </div>
+    <span class="win-title">⬛ Terminal — cyperuser@cyperweb-os</span>
+  </div>
+  <div class="window-body">
+    <div id="termBody">
+      <div id="termOutput"></div>
+      <div class="term-prompt">
+        <span class="term-ps1" id="termPS1">cyperuser@cyperweb-os:<span class="term-ps1-path" id="termPathDisplay">~</span>$ </span>
+        <input type="text" id="termInput" autofocus spellcheck="false" autocomplete="off">
+      </div>
+    </div>
+  </div>
+  <div class="resize-handle" id="terminalWindow-rh"></div>
+</div>
+
+<!-- FILE MANAGER WINDOW -->
+<div class="window" id="fileWindow">
+  <div class="window-titlebar" id="fileWindow-tb">
+    <div class="win-controls">
+      <button class="wc wc-close" onclick="closeWindow('fileWindow')"></button>
+      <button class="wc wc-min" onclick="minimizeWindow('fileWindow')"></button>
+      <button class="wc wc-max" onclick="maximizeWindow('fileWindow')"></button>
+    </div>
+    <span class="win-title">📁 File Manager</span>
+  </div>
+  <div class="window-body">
+    <div id="fileBody">
+      <div id="fileToolbar">
+        <button class="file-tb-btn" onclick="fileNavBack()">◀ Back</button>
+        <button class="file-tb-btn" onclick="fileNavHome()">⌂ Home</button>
+        <input type="text" id="filePath" readonly value="~">
+        <button class="file-tb-btn" onclick="fileNewFolder()">📁 New</button>
+        <button class="file-tb-btn" onclick="fileDeleteSelected()" style="color:#ff6b6b;border-color:#ff6b6b44;">🗑 Delete</button>
+        <button class="file-tb-btn" onclick="fileRefresh()">↻</button>
+      </div>
+      <div id="fileGrid"></div>
+    </div>
+  </div>
+  <div class="resize-handle" id="fileWindow-rh"></div>
+</div>
+
+<!-- SYSTEM MONITOR WINDOW -->
+<div class="window" id="sysmonWindow">
+  <div class="window-titlebar" id="sysmonWindow-tb">
+    <div class="win-controls">
+      <button class="wc wc-close" onclick="closeWindow('sysmonWindow')"></button>
+      <button class="wc wc-min" onclick="minimizeWindow('sysmonWindow')"></button>
+      <button class="wc wc-max" onclick="maximizeWindow('sysmonWindow')"></button>
+    </div>
+    <span class="win-title">📊 System Monitor</span>
+  </div>
+  <div class="window-body">
+    <div id="sysmonBody">
+      <div class="sm-section">
+        <div class="sm-title">CPU Usage</div>
+        <div class="sm-row"><span class="sm-label">Core 0</span><span class="sm-val" id="cpu0">--</span></div>
+        <div class="sm-bar"><div class="sm-bar-fill sm-bar-cpu" id="cpu0bar" style="width:0%"></div></div>
+        <div class="sm-row"><span class="sm-label">Core 1</span><span class="sm-val" id="cpu1">--</span></div>
+        <div class="sm-bar"><div class="sm-bar-fill sm-bar-cpu" id="cpu1bar" style="width:0%"></div></div>
+      </div>
+      <div class="sm-section">
+        <div class="sm-title">Memory</div>
+        <div class="sm-row"><span class="sm-label">Used</span><span class="sm-val" id="memUsed">1240 MB</span></div>
+        <div class="sm-row"><span class="sm-label">Total</span><span class="sm-val">4096 MB</span></div>
+        <div class="sm-bar"><div class="sm-bar-fill sm-bar-mem" id="memBar" style="width:30%"></div></div>
+      </div>
+      <div class="sm-section">
+        <div class="sm-title">Disk</div>
+        <div class="sm-row"><span class="sm-label">/ (root)</span><span class="sm-val">12.4 GB / 50 GB</span></div>
+        <div class="sm-bar"><div class="sm-bar-fill sm-bar-disk" style="width:25%"></div></div>
+      </div>
+      <div class="sm-section">
+        <div class="sm-title">Processes</div>
+        <div id="processList"></div>
+      </div>
+    </div>
+  </div>
+  <div class="resize-handle" id="sysmonWindow-rh"></div>
+</div>
+
+<!-- TEXT EDITOR WINDOW -->
+<div class="window" id="editorWindow">
+  <div class="window-titlebar" id="editorWindow-tb">
+    <div class="win-controls">
+      <button class="wc wc-close" onclick="closeWindow('editorWindow')"></button>
+      <button class="wc wc-min" onclick="minimizeWindow('editorWindow')"></button>
+      <button class="wc wc-max" onclick="maximizeWindow('editorWindow')"></button>
+    </div>
+    <span class="win-title">📝 CyperEdit</span>
+  </div>
+  <div class="window-body">
+    <div id="editorBody">
+      <div id="editorToolbar">
+        <input type="text" id="editorFilename" value="untitled.txt" placeholder="filename">
+        <button class="file-tb-btn" onclick="editorSave()">💾 Save</button>
+        <button class="file-tb-btn" onclick="editorNew()">🗋 New</button>
+      </div>
+      <textarea id="editorArea" placeholder="Start typing..."></textarea>
+      <div id="editorStatus">Line 1, Col 1 | UTF-8 | Plain Text</div>
+    </div>
+  </div>
+  <div class="resize-handle" id="editorWindow-rh"></div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="contextMenu">
+  <div class="ctx-item" onclick="openWindow('terminalWindow');hideCtx()">⬛ Open Terminal</div>
+  <div class="ctx-item" onclick="openWindow('fileWindow');hideCtx()">📁 Open Files</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="showNotif('System','Refreshing desktop...');hideCtx()">↻ Refresh Desktop</div>
+  <div class="ctx-item" onclick="hideCtx()">✦ About CYPERWEB OS</div>
+</div>
+
+<script>
+// ==============================
+// VIRTUAL FILE SYSTEM
+// ==============================
+let vfs = {
+  name: '~',
+  type: 'directory',
+  children: [
+    { name: 'Desktop', type: 'directory', children: [] },
+    { name: 'Documents', type: 'directory', children: [
+      { name: 'readme.txt', type: 'file', content: 'Welcome to CYPERWEB OS!\nCreated by Yosef Amr\nSupervised by Eng. Karim' }
+    ]},
+    { name: 'Downloads', type: 'directory', children: [] },
+    { name: 'bb', type: 'directory', children: [] },
+    { name: 'cc', type: 'directory', children: [] },
+    { name: 'jj.txt', type: 'file', content: 'Hello World' }
+  ]
+};
+let currentPath = ['~'];
+let termHistory = [];
+let historyIndex = -1;
+
+function getDir(path) {
+  let node = vfs;
+  for (let i = 1; i < path.length; i++) {
+    const c = node.children && node.children.find(x => x.name === path[i]);
+    if (!c || c.type !== 'directory') return null;
+    node = c;
+  }
+  return node;
+}
+
+function getCurrentDir() { return getDir(currentPath); }
+
+// ==============================
+// TERMINAL
+// ==============================
+function termPrint(text, cls = 'term-line-output') {
+  const out = document.getElementById('termOutput');
+  const div = document.createElement('div');
+  div.className = 'term-output ' + cls;
+  div.textContent = text;
+  out.appendChild(div);
+  scrollTerm();
+}
+
+function scrollTerm() {
+  const b = document.getElementById('termBody');
+  b.scrollTop = b.scrollHeight;
+}
+
+function updatePrompt() {
+  const p = currentPath.join('/').replace('~/','~/') || '~';
+  document.getElementById('termPathDisplay').textContent = currentPath.join('/');
+}
+
+function handleCommand(input) {
+  const trimmed = input.trim();
+  if (!trimmed) return;
+  termHistory.unshift(trimmed);
+  historyIndex = -1;
+
+  termPrint(`cyperuser@cyperweb-os:${currentPath.join('/')}$ ${trimmed}`, 'term-line-user');
+
+  const parts = trimmed.split(' ');
+  const cmd = parts[0].toLowerCase();
+  const args = parts.slice(1);
+
+  switch (cmd) {
+    case 'help':
+      termPrint(`Available commands:
+
+  ── Navigation ──────────────────────────────
+  pwd                   - Print working directory
+  ls                    - List files & folders
+  ls -a                 - Show hidden files too
+  ls -l                 - Long format (perms + size)
+  cd <dir>              - Enter folder
+  cd ..                 - Go back one level
+  cd /                  - Go to root
+  cd ~                  - Go to home
+
+  ── Directories ─────────────────────────────
+  mkdir <name>          - Create folder
+  mkdir -p <a/b/c>      - Create nested folders
+  rmdir <name>          - Remove empty folder
+  rm -d <name>          - Remove empty folder
+
+  ── Files ───────────────────────────────────
+  touch <file>          - Create file
+  touch -a <file>       - Update last access time
+  touch -m <file>       - Update last modified time
+  touch -c <file>       - Update time (no create)
+  touch -d "date" <f>   - Set specific date on file
+  touch -r <f1> <f2>    - Copy timestamp f1 → f2
+  stat <file>           - Show full file details
+  cat <file>            - Display file contents
+  echo "text"           - Print text
+  echo "text" > <file>  - Write text into file
+
+  ── Remove ──────────────────────────────────
+  rm <file>             - Remove file
+  rm -i <file>          - Remove with confirmation
+  rm -v <file>          - Remove with message
+  rm -iv <file>         - Remove with confirm + msg
+  rm -r <folder>        - Remove folder recursively
+  rm -ir <folder>       - Remove folder with confirm
+
+  ── System ──────────────────────────────────
+  whoami                - Show current user
+  ps                    - List processes
+  free                  - Memory info
+  uname                 - System info
+  neofetch              - System info with logo
+  history               - Show command history
+  clear                 - Clear terminal
+  cyperWeb              - CYPER WEB greeting
+  help                  - Show this help`);
+      break;
+
+    case 'ls': {
+      const dir = getCurrentDir();
+      if (!dir) { termPrint('ls: no such directory', 'term-line-error'); break; }
+      const showHidden = args.includes('-a');
+      const longFormat = args.includes('-l');
+      let items = dir.children || [];
+      // hidden files start with '.' — add virtual . and .. when -a
+      let allItems = showHidden
+        ? [{ name: '.', type: 'directory' }, { name: '..', type: 'directory' }, ...items]
+        : items;
+      if (allItems.length === 0) { termPrint('(empty directory)'); break; }
+      if (longFormat) {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+        const lines = allItems.map(c => {
+          const type = c.type === 'directory' ? 'd' : '-';
+          const perms = c.type === 'directory' ? 'rwxr-xr-x' : 'rw-r--r--';
+          const size = c.type === 'file' ? String(c.content ? c.content.length : 0).padStart(6) : '   512';
+          return `${type}${perms}  1 cyperuser cyperuser ${size} ${dateStr} ${c.name}${c.type === 'directory' ? '/' : ''}`;
+        });
+        termPrint('total ' + allItems.length + '\n' + lines.join('\n'));
+      } else {
+        const out = allItems.map(c => c.type === 'directory' ? c.name + '/' : c.name).join('  ');
+        termPrint(out, 'term-line-success');
+      }
+      break;
+    }
+
+    case 'pwd':
+      termPrint(currentPath.join('/'), 'term-line-success');
+      break;
+
+    case 'cd': {
+      if (!args[0] || args[0] === '~') { currentPath = ['~']; updatePrompt(); break; }
+      if (args[0] === '/') { currentPath = ['~']; updatePrompt(); termPrint('/', 'term-line-success'); break; }
+      if (args[0] === '..') {
+        if (currentPath.length > 1) currentPath.pop();
+        updatePrompt(); break;
+      }
+      const dir = getCurrentDir();
+      const target = dir && dir.children && dir.children.find(c => c.name === args[0] && c.type === 'directory');
+      if (target) { currentPath.push(args[0]); updatePrompt(); }
+      else termPrint(`cd: no such file or directory: ${args[0]}`, 'term-line-error');
+      break;
+    }
+
+    case 'mkdir': {
+      if (!args[0]) { termPrint('mkdir: missing operand', 'term-line-error'); break; }
+      const nested = args[0] === '-p';
+      const dirName = nested ? args[1] : args[0];
+      if (!dirName) { termPrint('mkdir: missing directory name', 'term-line-error'); break; }
+
+      if (nested && dirName.includes('/')) {
+        // mkdir -p a/b/c — create nested dirs
+        const parts = dirName.split('/');
+        let node = getCurrentDir();
+        let created = [];
+        for (const part of parts) {
+          if (!part) continue;
+          let existing = node.children.find(c => c.name === part && c.type === 'directory');
+          if (!existing) {
+            const newDir = { name: part, type: 'directory', children: [] };
+            node.children.push(newDir);
+            created.push(part);
+            node = newDir;
+          } else { node = existing; }
+        }
+        termPrint(`Created: ${dirName}`, 'term-line-success');
+        renderFileManager();
+        break;
+      }
+
+      const dir = getCurrentDir();
+      if (dir.children.find(c => c.name === dirName)) {
+        termPrint(`mkdir: cannot create directory '${dirName}': File exists`, 'term-line-error'); break;
+      }
+      dir.children.push({ name: dirName, type: 'directory', children: [] });
+      termPrint(`Directory '${dirName}' created successfully.`, 'term-line-success');
+      renderFileManager();
+      break;
+    }
+
+    case 'rmdir': {
+      if (!args[0]) { termPrint('rmdir: missing operand', 'term-line-error'); break; }
+      const dir = getCurrentDir();
+      const target = dir.children.find(c => c.name === args[0] && c.type === 'directory');
+      if (!target) { termPrint(`rmdir: '${args[0]}': No such directory`, 'term-line-error'); break; }
+      if (target.children && target.children.length > 0) { termPrint(`rmdir: '${args[0]}': Directory not empty (use rm -r to force)`, 'term-line-error'); break; }
+      dir.children.splice(dir.children.indexOf(target), 1);
+      termPrint(`Directory '${args[0]}' removed.`, 'term-line-success');
+      renderFileManager();
+      break;
+    }
+
+    case 'touch': {
+      if (!args[0]) { termPrint('touch: missing file operand', 'term-line-error'); break; }
+      const dir = getCurrentDir();
+      const now = new Date().toLocaleString();
+
+      // touch -r file1 file2 → copy timestamp
+      if (args[0] === '-r') {
+        const src = dir.children.find(c => c.name === args[1]);
+        const dst = dir.children.find(c => c.name === args[2]);
+        if (!src) { termPrint(`touch: '${args[1]}': No such file`, 'term-line-error'); break; }
+        if (!dst) { termPrint(`touch: '${args[2]}': No such file`, 'term-line-error'); break; }
+        dst.accessed = src.accessed; dst.modified = src.modified;
+        termPrint(`Timestamp of '${args[2]}' set from '${args[1]}'.`, 'term-line-success'); break;
+      }
+
+      // touch -d "date" file
+      if (args[0] === '-d') {
+        const dateStr = args[1]; const fname = args[2];
+        if (!fname) { termPrint('touch: missing file name', 'term-line-error'); break; }
+        let f = dir.children.find(c => c.name === fname);
+        if (!f) { f = { name: fname, type: 'file', content: '', accessed: dateStr, modified: dateStr }; dir.children.push(f); renderFileManager(); }
+        else { f.accessed = dateStr; f.modified = dateStr; }
+        termPrint(`Timestamp of '${fname}' set to: ${dateStr}`, 'term-line-success'); break;
+      }
+
+      // touch -c file → update time only, no create
+      if (args[0] === '-c') {
+        const f = dir.children.find(c => c.name === args[1]);
+        if (!f) { termPrint(`touch: '${args[1]}': File does not exist (skipped)`, 'term-line-output'); break; }
+        f.accessed = now; f.modified = now;
+        termPrint(`Timestamps updated: ${args[1]}`, 'term-line-success'); break;
+      }
+
+      // touch -a file → update access time only
+      if (args[0] === '-a') {
+        const fname = args[1];
+        if (!fname) { termPrint('touch: missing file name', 'term-line-error'); break; }
+        let f = dir.children.find(c => c.name === fname);
+        if (!f) { f = { name: fname, type: 'file', content: '', accessed: now, modified: '' }; dir.children.push(f); renderFileManager(); }
+        else { f.accessed = now; }
+        termPrint(`Access time updated: ${fname}`, 'term-line-success'); break;
+      }
+
+      // touch -m file → update modified time only
+      if (args[0] === '-m') {
+        const fname = args[1];
+        if (!fname) { termPrint('touch: missing file name', 'term-line-error'); break; }
+        let f = dir.children.find(c => c.name === fname);
+        if (!f) { f = { name: fname, type: 'file', content: '', accessed: '', modified: now }; dir.children.push(f); renderFileManager(); }
+        else { f.modified = now; }
+        termPrint(`Modified time updated: ${fname}`, 'term-line-success'); break;
+      }
+
+      // touch file → normal create
+      const fname = args[0];
+      if (!dir.children.find(c => c.name === fname)) {
+        dir.children.push({ name: fname, type: 'file', content: '', accessed: now, modified: now });
+        termPrint(`File '${fname}' created.`, 'term-line-success');
+        renderFileManager();
+      } else {
+        // file exists — update both timestamps
+        const f = dir.children.find(c => c.name === fname);
+        f.accessed = now; f.modified = now;
+        termPrint(`Timestamps updated: ${fname}`, 'term-line-success');
+      }
+      break;
+    }
+
+    case 'rm': {
+      const flags   = args.filter(a => a.startsWith('-'));
+      const isR     = flags.some(f => f.includes('r'));
+      const isI     = flags.some(f => f.includes('i'));
+      const isV     = flags.some(f => f.includes('v'));
+      const isD     = flags.some(f => f === '-d');
+      const targetName = args.find(a => !a.startsWith('-'));
+      if (!targetName) { termPrint('rm: missing operand', 'term-line-error'); break; }
+      const dir = getCurrentDir();
+      const idx = dir.children.findIndex(c => c.name === targetName);
+      if (idx === -1) { termPrint(`rm: cannot remove '${targetName}': No such file or directory`, 'term-line-error'); break; }
+      const item = dir.children[idx];
+
+      if (item.type === 'directory' && !isR && !isD) {
+        termPrint(`rm: cannot remove '${targetName}': Is a directory (use rm -r)`, 'term-line-error'); break;
+      }
+      if (isD && item.type === 'directory' && item.children && item.children.length > 0) {
+        termPrint(`rm: cannot remove '${targetName}': Directory not empty`, 'term-line-error'); break;
+      }
+      if (isI) {
+        const confirmed = confirm(`rm: remove '${targetName}'?`);
+        if (!confirmed) { termPrint(`rm: '${targetName}' not removed.`, 'term-line-output'); break; }
+      }
+      dir.children.splice(idx, 1);
+      if (isV) termPrint(`removed '${targetName}'`, 'term-line-success');
+      else termPrint(`Removed '${targetName}'${isR && item.type==='directory' ? ' and all contents' : ''}.`, 'term-line-success');
+      renderFileManager();
+      break;
+    }
+
+    case 'stat': {
+      if (!args[0]) { termPrint('stat: missing file operand', 'term-line-error'); break; }
+      const dir = getCurrentDir();
+      const f = dir.children.find(c => c.name === args[0]);
+      if (!f) { termPrint(`stat: cannot stat '${args[0]}': No such file or directory`, 'term-line-error'); break; }
+      const now = new Date().toLocaleString();
+      const size = f.type === 'file' ? (f.content ? f.content.length : 0) : 4096;
+      termPrint(`  File: ${f.name}
+  Size: ${size} bytes
+  Type: ${f.type === 'directory' ? 'directory' : 'regular file'}
+Access: ${f.accessed || now}
+Modify: ${f.modified || now}
+Change: ${now}
+ Perms: ${f.type === 'directory' ? 'drwxr-xr-x' : '-rw-r--r--'}
+ Owner: cyperuser`, 'term-line-success');
+      break;
+    }
+
+    case 'history': {
+      if (termHistory.length === 0) { termPrint('(no history)', 'term-line-output'); break; }
+      const hist = [...termHistory].reverse().map((c, i) => `  ${String(i+1).padStart(3)}  ${c}`).join('\n');
+      termPrint(hist);
+      break;
+    }
+
+    case 'cat': {
+      if (!args[0]) { termPrint('cat: missing file operand', 'term-line-error'); break; }
+      const dir = getCurrentDir();
+      const file = dir.children.find(c => c.name === args[0] && c.type === 'file');
+      if (!file) { termPrint(`cat: ${args[0]}: No such file`, 'term-line-error'); break; }
+      termPrint(file.content || '(empty file)');
+      break;
+    }
+
+    case 'echo': {
+      // echo "text" > file.txt
+      const rIdx = args.indexOf('>');
+      if (rIdx !== -1) {
+        const text    = args.slice(0, rIdx).join(' ').replace(/^"|"$/g, '');
+        const fname   = args[rIdx + 1];
+        if (!fname) { termPrint('echo: missing filename after >', 'term-line-error'); break; }
+        const dir = getCurrentDir();
+        let f = dir.children.find(c => c.name === fname && c.type === 'file');
+        if (!f) { f = { name: fname, type: 'file', content: text }; dir.children.push(f); renderFileManager(); }
+        else { f.content = text; }
+        termPrint(`Written to '${fname}'.`, 'term-line-success');
+      } else {
+        termPrint(args.join(' ').replace(/^"|"$/g, ''));
+      }
+      break;
+    }
+
+    case 'whoami':
+      termPrint('cyperWeb — Created by CYPER WEB Team', 'term-line-success');
+      break;
+
+    case 'ps':
+      termPrint(`PID  NAME              CPU%   MEM
+  1  kernel            0.1    12MB
+ 42  desktop_gui       1.2    145MB
+105  terminal          0.5    28MB
+203  file_manager      0.3    22MB
+ 88  system_monitor    0.2    18MB`);
+      break;
+
+    case 'free':
+      termPrint(`              total        used        free
+Mem:           4096MB       1240MB      2856MB
+Swap:           512MB          0MB       512MB`, 'term-line-success');
+      break;
+
+    case 'uname':
+      termPrint('CYPER WEB OS v2.2 — Kernel 5.15.0-cyberweb — x86_64', 'term-line-success');
+      break;
+
+    case 'neofetch':
+      termPrint(`
+   ██████╗██╗   ██╗██████╗ ███████╗██████╗     OS: CYPER WEB OS v2.2
+  ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗    Host: CyperWeb Virtual Machine
+  ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝    Kernel: 5.15.0-cyberweb
+  ██║       ╚██╔╝  ██╔═══╝ ██╔══╝  ██╔══██╗    Shell: cyberbash 2.2
+  ╚██████╗   ██║   ██║     ███████╗██║  ██║     Terminal: CyperTerm
+   ╚═════╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝    CPU: CyperCore i9 @ 4.2GHz
+                                                 Memory: 1240MB / 4096MB
+  Created by: CYPER WEB                         Disk: 12.4GB / 50GB
+  ENG KARIM & ENG MOHAMED                       Resolution: 1920x1080
+`, 'term-line-success');
+      break;
+
+    case 'cyberweb':
+    case 'cyperweb': {
+      termPrint(`
+  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗
+  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝
+  ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  
+  ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝  
+  ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗
+   ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
+
+  🌐 CYPER WEB OS v2.2
+  👨‍💻 Created by: CYPER WEB Team
+  🎓 ENG KARIM  &  ENG MOHAMED
+  `, 'term-line-success');
+      break;
+    }
+
+    case 'clear':
+      document.getElementById('termOutput').innerHTML = '';
+      break;
+
+    default:
+      termPrint(`bash: command not found: ${cmd}`, 'term-line-error');
+  }
+}
+
+document.getElementById('termInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    handleCommand(this.value);
+    this.value = '';
+  } else if (e.key === 'ArrowUp') {
+    historyIndex = Math.min(historyIndex + 1, termHistory.length - 1);
+    if (termHistory[historyIndex]) this.value = termHistory[historyIndex];
+    e.preventDefault();
+  } else if (e.key === 'ArrowDown') {
+    historyIndex = Math.max(historyIndex - 1, -1);
+    this.value = historyIndex >= 0 ? termHistory[historyIndex] : '';
+    e.preventDefault();
+  }
+});
+
+document.getElementById('termBody').addEventListener('click', () => {
+  document.getElementById('termInput').focus();
+});
+
+// ==============================
+// FILE MANAGER
+// ==============================
+let fileNavPath = ['~'];
+let selectedFile = null;
+
+function renderFileManager() {
+  const dir = getDir(fileNavPath);
+  if (!dir) return;
+  document.getElementById('filePath').value = fileNavPath.join('/');
+  const grid = document.getElementById('fileGrid');
+  grid.innerHTML = '';
+  if (!dir.children || dir.children.length === 0) {
+    grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:20px">Empty folder</div>';
+    return;
+  }
+  dir.children.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    const icon = item.type === 'directory' ? '📁' : getFileIcon(item.name);
+    el.innerHTML = `<span class="fi-icon">${icon}</span><span class="fi-name">${item.name}</span>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.file-item').forEach(x => x.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedFile = item;
+    });
+    el.addEventListener('dblclick', () => {
+      if (item.type === 'directory') {
+        fileNavPath.push(item.name);
+        renderFileManager();
+      } else {
+        openEditorWith(item);
+      }
+    });
+    grid.appendChild(el);
+  });
+}
+
+function getFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const icons = { txt: '📄', js: '📜', html: '🌐', css: '🎨', json: '📋', md: '📝', py: '🐍', sh: '⚙️' };
+  return icons[ext] || '📄';
+}
+
+function fileNavBack() {
+  if (fileNavPath.length > 1) { fileNavPath.pop(); renderFileManager(); }
+}
+function fileNavHome() { fileNavPath = ['~']; renderFileManager(); }
+function fileRefresh() { renderFileManager(); }
+
+function fileNewFolder() {
+  const name = prompt('New folder name:');
+  if (!name || !name.trim()) return;
+  const dir = getDir(fileNavPath);
+  if (dir.children.find(c => c.name === name.trim())) {
+    showNotif('File Manager', `'${name}' already exists!`, true); return;
+  }
+  dir.children.push({ name: name.trim(), type: 'directory', children: [] });
+  showNotif('File Manager', `Folder '${name}' created.`);
+  renderFileManager();
+}
+
+function fileDeleteSelected() {
+  if (!selectedFile) { showNotif('File Manager', 'Select a file or folder first.', true); return; }
+  const confirmed = confirm(`Delete '${selectedFile.name}'?${selectedFile.type === 'directory' ? '\nThis will delete all contents inside.' : ''}`);
+  if (!confirmed) return;
+  const dir = getDir(fileNavPath);
+  const idx = dir.children.findIndex(c => c.name === selectedFile.name);
+  if (idx !== -1) { dir.children.splice(idx, 1); }
+  showNotif('File Manager', `'${selectedFile.name}' deleted.`);
+  selectedFile = null;
+  renderFileManager();
+}
+
+// ==============================
+// TEXT EDITOR
+// ==============================
+let editorCurrentFile = null;
+
+function openEditorWith(file) {
+  editorCurrentFile = file;
+  document.getElementById('editorFilename').value = file.name;
+  document.getElementById('editorArea').value = file.content || '';
+  updateEditorStatus();
+  openWindow('editorWindow');
+}
+
+function editorSave() {
+  const name = document.getElementById('editorFilename').value;
+  const content = document.getElementById('editorArea').value;
+  if (editorCurrentFile) {
+    editorCurrentFile.content = content;
+    editorCurrentFile.name = name;
+    showNotif('Editor', `Saved: ${name}`, false);
+  } else {
+    const dir = getCurrentDir();
+    const existing = dir.children.find(c => c.name === name);
+    if (existing) { existing.content = content; }
+    else dir.children.push({ name, type: 'file', content });
+    showNotif('Editor', `Saved: ${name}`, false);
+  }
+  renderFileManager();
+}
+
+function editorNew() {
+  editorCurrentFile = null;
+  document.getElementById('editorFilename').value = 'untitled.txt';
+  document.getElementById('editorArea').value = '';
+  updateEditorStatus();
+}
+
+function updateEditorStatus() {
+  const ta = document.getElementById('editorArea');
+  const text = ta.value;
+  const lines = text.split('\n');
+  const pos = ta.selectionStart;
+  const before = text.substring(0, pos);
+  const line = before.split('\n').length;
+  const col = before.split('\n').pop().length + 1;
+  document.getElementById('editorStatus').textContent = `Line ${line}, Col ${col} | UTF-8 | ${lines.length} lines`;
+}
+
+document.getElementById('editorArea').addEventListener('keyup', updateEditorStatus);
+document.getElementById('editorArea').addEventListener('click', updateEditorStatus);
+
+// ==============================
+// SYSTEM MONITOR
+// ==============================
+const processes = [
+  { pid: 1, name: 'kernel', cpu: 0.1, mem: '12MB' },
+  { pid: 42, name: 'desktop_gui', cpu: 1.2, mem: '145MB' },
+  { pid: 88, name: 'sys_monitor', cpu: 0.2, mem: '18MB' },
+  { pid: 105, name: 'terminal', cpu: 0.5, mem: '28MB' },
+  { pid: 203, name: 'file_manager', cpu: 0.3, mem: '22MB' },
+];
+
+function updateSysmon() {
+  const c0 = Math.random() * 40 + 5;
+  const c1 = Math.random() * 30 + 3;
+  const mem = 1200 + Math.random() * 80;
+  document.getElementById('cpu0').textContent = c0.toFixed(1) + '%';
+  document.getElementById('cpu1').textContent = c1.toFixed(1) + '%';
+  document.getElementById('cpu0bar').style.width = c0 + '%';
+  document.getElementById('cpu1bar').style.width = c1 + '%';
+  document.getElementById('memUsed').textContent = Math.round(mem) + ' MB';
+  document.getElementById('memBar').style.width = (mem / 4096 * 100) + '%';
+
+  const pl = document.getElementById('processList');
+  pl.innerHTML = processes.map(p => {
+    const cpu = (p.cpu + Math.random() * 0.5).toFixed(1);
+    return `<div class="process-row">
+      <span class="pr-pid">${p.pid}</span>
+      <span class="pr-name">${p.name}</span>
+      <span class="pr-cpu">${cpu}%</span>
+      <span class="pr-mem">${p.mem}</span>
+    </div>`;
+  }).join('');
+}
+
+setInterval(updateSysmon, 1500);
+updateSysmon();
+
+// ==============================
+// WINDOW MANAGEMENT
+// ==============================
+let zTop = 10;
+function openWindow(id) {
+  const w = document.getElementById(id);
+  w.classList.add('open');
+  w.style.zIndex = ++zTop;
+  document.querySelectorAll('.window').forEach(x => x.classList.remove('focused'));
+  w.classList.add('focused');
+  updateTaskbar();
+  if (id === 'fileWindow') renderFileManager();
+  if (id === 'terminalWindow') setTimeout(() => document.getElementById('termInput').focus(), 100);
+}
+
+function closeWindow(id) {
+  document.getElementById(id).classList.remove('open');
+  updateTaskbar();
+}
+
+function minimizeWindow(id) {
+  document.getElementById(id).classList.remove('open');
+  updateTaskbar();
+}
+
+function maximizeWindow(id) {
+  const w = document.getElementById(id);
+  if (w.style.width === '100%') {
+    w.style.width = '';
+    w.style.height = '';
+    w.style.top = '';
+    w.style.left = '';
+  } else {
+    w.style.width = '100%';
+    w.style.height = `calc(100vh - ${getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')})`;
+    w.style.top = '0';
+    w.style.left = '0';
+    w.style.borderRadius = '0';
+  }
+}
+
+function updateTaskbar() {
+  ['terminal','files','sysmon','editor'].forEach(k => {
+    const map = { terminal:'terminalWindow', files:'fileWindow', sysmon:'sysmonWindow', editor:'editorWindow' };
+    const btn = document.getElementById('tb-' + k);
+    btn.classList.toggle('active', document.getElementById(map[k]).classList.contains('open'));
+  });
+}
+
+// Drag windows
+document.querySelectorAll('.window-titlebar').forEach(tb => {
+  let dragging = false, ox, oy;
+  tb.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('wc')) return;
+    const win = tb.closest('.window');
+    win.style.zIndex = ++zTop;
+    document.querySelectorAll('.window').forEach(x => x.classList.remove('focused'));
+    win.classList.add('focused');
+    dragging = true;
+    const rect = win.getBoundingClientRect();
+    ox = e.clientX - rect.left;
+    oy = e.clientY - rect.top;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const win = tb.closest('.window');
+    const dw = window.innerWidth;
+    const dh = window.innerHeight - 44;
+    let x = e.clientX - ox;
+    let y = e.clientY - oy;
+
+    // Snap to edges (within 12px)
+    if (x < 12) x = 0;
+    if (y < 12) y = 0;
+    if (x + win.offsetWidth > dw - 12) x = dw - win.offsetWidth;
+    if (y + win.offsetHeight > dh - 12) y = dh - win.offsetHeight;
+
+    x = Math.max(0, Math.min(x, dw - win.offsetWidth));
+    y = Math.max(0, Math.min(y, dh - win.offsetHeight));
+    win.style.left = x + 'px';
+    win.style.top = y + 'px';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+});
+
+// Click anywhere on window to bring to front
+document.querySelectorAll('.window').forEach(win => {
+  win.addEventListener('mousedown', () => {
+    win.style.zIndex = ++zTop;
+    document.querySelectorAll('.window').forEach(x => x.classList.remove('focused'));
+    win.classList.add('focused');
+  });
+});
+
+// Resize windows
+document.querySelectorAll('.resize-handle').forEach(rh => {
+  let resizing = false, startX, startY, startW, startH;
+  rh.addEventListener('mousedown', e => {
+    const win = rh.closest('.window');
+    resizing = true;
+    startX = e.clientX; startY = e.clientY;
+    startW = win.offsetWidth; startH = win.offsetHeight;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    const win = rh.closest('.window');
+    win.style.width = Math.max(320, startW + e.clientX - startX) + 'px';
+    win.style.height = Math.max(200, startH + e.clientY - startY) + 'px';
+  });
+  document.addEventListener('mouseup', () => { resizing = false; });
+});
+
+// ==============================
+// CONTEXT MENU
+// ==============================
+document.getElementById('desktop').addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const m = document.getElementById('contextMenu');
+  m.style.display = 'block';
+  m.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
+  m.style.top = Math.min(e.clientY, window.innerHeight - 160) + 'px';
+});
+document.addEventListener('click', hideCtx);
+function hideCtx() { document.getElementById('contextMenu').style.display = 'none'; }
+
+// ==============================
+// NOTIFICATIONS
+// ==============================
+function showNotif(title, body, isWarn = false) {
+  const area = document.getElementById('notifArea');
+  const n = document.createElement('div');
+  n.className = 'notif' + (isWarn ? ' warn' : '');
+  n.innerHTML = `<div class="notif-title">${title}</div><div class="notif-body">${body}</div>`;
+  area.appendChild(n);
+  setTimeout(() => { n.style.opacity = '0'; n.style.transition = 'opacity 0.4s'; setTimeout(() => n.remove(), 400); }, 3500);
+}
+
+// ==============================
+// CLOCK
+// ==============================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('taskbarClock').textContent =
+    now.toLocaleDateString('en-GB') + '  ' + now.toLocaleTimeString();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ==============================
+// BOOT SEQUENCE
+// ==============================
+const bootMessages = [
+  ['ok', 'Loading kernel modules...'],
+  ['ok', 'Initializing virtual file system...'],
+  ['ok', 'Starting desktop environment...'],
+  ['info', 'CYPER WEB OS v2.2 — Build 2025.2'],
+  ['ok', 'Loading terminal emulator...'],
+  ['ok', 'Starting file manager...'],
+  ['ok', 'Starting system monitor...'],
+  ['warn', 'Guest session active — limited privileges'],
+  ['ok', 'Welcome, cyperuser (Yosef Amr)'],
+];
+
+function runBoot() {
+  const log = document.getElementById('bootLog');
+  const bar = document.getElementById('bootProgressBar');
+  let i = 0;
+  function step() {
+    if (i >= bootMessages.length) {
+      bar.style.width = '100%';
+      setTimeout(() => {
+        document.getElementById('bootScreen').classList.add('fade-out');
+        setTimeout(() => {
+          document.getElementById('bootScreen').style.display = 'none';
+          openWindow('terminalWindow');
+          showNotif('CYPERWEB OS', 'System ready. Double-click icons or use taskbar.');
+          termPrint(`
+   ██████╗██╗   ██╗██████╗ ███████╗██████╗ ██╗    ██╗███████╗██████╗ 
+  ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██║    ██║██╔════╝██╔══██╗
+  ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝██║ █╗ ██║█████╗  ██████╔╝
+  ██║       ╚██╔╝  ██╔═══╝ ██╔══╝  ██╔══██╗██║███╗██║██╔══╝  ██╔══██╗
+  ╚██████╗   ██║   ██║     ███████╗██║  ██║╚███╔███╔╝███████╗██████╔╝
+   ╚═════╝   ╚═╝   ╚═╝     ╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚══════╝╚═════╝ 
+
+          /\\ /\\              PREDATOR COBRA v2.2
+         /  V  \\             ─────────────────────
+        /  | |  \\            WELCOME ENG KARIM
+       |   | |   |                  &
+       |   | |   |            ENG MOHAMED
+        \\  | |  /            ─────────────────────
+         \\ | | /             DESIGNED BY: CYPER WEB
+          \\|||/
+            VV
+  `, 'term-line-success');
+          termPrint('Type "help" to see available commands.\n', 'term-line-output');
+        }, 800);
+      }, 400);
+      return;
+    }
+    const [type, msg] = bootMessages[i];
+    const line = document.createElement('div');
+    line.className = `boot-line`;
+    line.style.animationDelay = '0s';
+    const badge = { ok: '[ OK ]', info: '[INFO]', warn: '[WARN]' }[type];
+    const cls = { ok: 'boot-ok', info: 'boot-info', warn: 'boot-warn' }[type];
+    line.innerHTML = `<span class="${cls}">${badge}</span><span>${msg}</span>`;
+    log.appendChild(line);
+    bar.style.width = ((i + 1) / bootMessages.length * 100) + '%';
+    i++;
+    setTimeout(step, 250);
+  }
+  setTimeout(step, 600);
+}
+
+// ==============================
+// DESKTOP WALLPAPER — CYBER ART
+// ==============================
+function drawWallpaper() {
+  const canvas = document.getElementById('desktopWallpaper');
+  const desktop = document.getElementById('desktop');
+  canvas.width  = desktop.offsetWidth;
+  canvas.height = desktop.offsetHeight;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+
+  // ── PURE BLACK ──
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── DEEP ATMOSPHERE ──
+  const atmo = ctx.createRadialGradient(cx, cy, 0, cx, cy, H * 0.85);
+  atmo.addColorStop(0,   'rgba(0, 20, 8, 0.95)');
+  atmo.addColorStop(0.5, 'rgba(0, 8, 3, 0.7)');
+  atmo.addColorStop(1,   '#000');
+  ctx.fillStyle = atmo;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── GRID PERSPECTIVE ──
+  const gridAlpha = 0.07;
+  ctx.strokeStyle = `rgba(0,255,65,${gridAlpha})`;
+  ctx.lineWidth = 1;
+  // Horizontal lines vanishing to center
+  for (let i = 0; i <= 20; i++) {
+    const y = H * 0.55 + (H * 0.45 * i / 20);
+    const spread = (i / 20);
+    ctx.beginPath();
+    ctx.moveTo(cx - W * 0.8 * spread, y);
+    ctx.lineTo(cx + W * 0.8 * spread, y);
+    ctx.stroke();
+  }
+  // Vertical lines vanishing to center
+  for (let i = -12; i <= 12; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cx + (W * 0.06) * i, H * 0.55);
+    ctx.lineTo(cx + (W * 0.5) * (i / 12), H);
+    ctx.stroke();
+  }
+
+  // ── HEXAGON PATTERN — center ──
+  function hexagon(x, y, r, lineW, color, alpha) {
+    ctx.beginPath();
+    for (let a = 0; a < 6; a++) {
+      const angle = (Math.PI / 3) * a - Math.PI / 6;
+      const px = x + r * Math.cos(angle);
+      const py = y + r * Math.sin(angle);
+      a === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = color || `rgba(0,255,65,${alpha || 0.15})`;
+    ctx.lineWidth = lineW || 1;
+    ctx.stroke();
+  }
+
+  // Outer rings of hexagons
+  const hexR  = Math.min(W, H) * 0.045;
+  const rings = [
+    { count: 1,  radius: 0,                  alpha: 0.5,  lw: 1.5 },
+    { count: 6,  radius: hexR * 2.1,         alpha: 0.3,  lw: 1   },
+    { count: 12, radius: hexR * 4.2,         alpha: 0.15, lw: 0.7 },
+    { count: 18, radius: hexR * 6.3,         alpha: 0.08, lw: 0.5 },
+  ];
+
+  rings.forEach(({ count, radius, alpha, lw }) => {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 / count) * i;
+      const hx = cx + radius * Math.cos(angle);
+      const hy = cy * 0.72 + radius * Math.sin(angle);
+      hexagon(hx, hy, hexR, lw, null, alpha);
+    }
+  });
+
+  // ── GLOWING CENTER CIRCLE ──
+  const centerGlow = ctx.createRadialGradient(cx, cy*0.72, 0, cx, cy*0.72, hexR*7);
+  centerGlow.addColorStop(0,   'rgba(0,255,65,0.18)');
+  centerGlow.addColorStop(0.3, 'rgba(0,255,65,0.06)');
+  centerGlow.addColorStop(0.7, 'rgba(180,0,0,0.04)');
+  centerGlow.addColorStop(1,   'transparent');
+  ctx.fillStyle = centerGlow;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── CONCENTRIC CIRCLES ──
+  for (let r = hexR * 2; r <= hexR * 14; r += hexR * 2.5) {
+    ctx.beginPath();
+    ctx.arc(cx, cy * 0.72, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,255,65,${0.04 + (hexR * 2) / r * 0.06})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // ── CORNER BRACKETS ──
+  const bSize = Math.min(W, H) * 0.07;
+  const bGap  = Math.min(W, H) * 0.03;
+  const corners = [
+    [bGap,     bGap,      1,  1 ],
+    [W-bGap,   bGap,     -1,  1 ],
+    [bGap,     H-bGap,    1, -1 ],
+    [W-bGap,   H-bGap,   -1, -1 ],
+  ];
+  ctx.strokeStyle = 'rgba(0,255,65,0.6)';
+  ctx.lineWidth   = 1.5;
+  ctx.shadowColor = '#00ff41';
+  ctx.shadowBlur  = 8;
+  corners.forEach(([x, y, dx, dy]) => {
+    ctx.beginPath();
+    ctx.moveTo(x + dx * bSize, y);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x, y + dy * bSize);
+    ctx.stroke();
+  });
+  ctx.shadowBlur = 0;
+
+  // ── SCAN LINES ──
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.fillRect(0, y, W, 1);
+  }
+
+  // ── NEON BORDER ──
+  const bw = 2;
+  const mkG = (x0,y0,x1,y1) => {
+    const g = ctx.createLinearGradient(x0,y0,x1,y1);
+    g.addColorStop(0,   'rgba(0,255,65,0)');
+    g.addColorStop(0.2, 'rgba(0,255,65,0.8)');
+    g.addColorStop(0.5, '#00ff41');
+    g.addColorStop(0.8, 'rgba(0,255,65,0.8)');
+    g.addColorStop(1,   'rgba(0,255,65,0)');
+    return g;
+  };
+  ctx.shadowColor = '#00ff41'; ctx.shadowBlur = 10;
+  ctx.fillStyle = mkG(0,0,W,0); ctx.fillRect(0,    0,    W,  bw);
+  ctx.fillStyle = mkG(0,0,W,0); ctx.fillRect(0,    H-bw, W,  bw);
+  ctx.fillStyle = mkG(0,0,0,H); ctx.fillRect(0,    0,    bw, H);
+  ctx.fillStyle = mkG(0,0,0,H); ctx.fillRect(W-bw, 0,    bw, H);
+  ctx.shadowBlur = 0;
+
+  // ── WELCOME TEXT ──
+  const fs = Math.max(11, Math.floor(W / 85));
+  ctx.font      = `${fs}px 'JetBrains Mono', monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,255,65,0.5)';
+  ctx.shadowColor = '#00ff41'; ctx.shadowBlur = 8;
+  ctx.fillText('Welcome Eng Karim & Eng Mohamed', W/2, H - 14);
+  ctx.shadowBlur = 0;
+}
+
+drawWallpaper();
+window.addEventListener('resize', drawWallpaper);
+
+runBoot();
+
+// Start menu toggle (simple)
+function toggleStart() { showNotif('Start Menu', 'Use taskbar buttons or double-click desktop icons.'); }
+</script>
+</body>
+</html>
